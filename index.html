@@ -45,8 +45,8 @@ table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:ta
 <label>Velocidad cinta (m/s)<input type="number" id="v" value="1.2" min="0.2" step="0.1"></label>
 <label>Salida de cubetas (s)<input type="number" id="hw" value="3" min="0.5" step="0.5"></label>
 <label>Picking (s por línea)<input type="number" id="tln" value="2" min="0" step="0.5"></label>
-<label>Stock por SKU (máx)<input type="number" id="stk" value="60" min="1"></label>
-<label>Mínimo reponer A / B / C<span><input type="number" id="mna" value="20" min="0" style="width:46px"> <input type="number" id="mnb" value="30" min="0" style="width:46px"> <input type="number" id="mnc" value="40" min="0" style="width:46px"></span></label>
+<label>Stock por SKU (máx)<input type="number" id="stk" value="500" min="1"></label>
+<label>Mínimo reponer A / B / C<span><input type="number" id="mna" value="300" min="0" style="width:46px"> <input type="number" id="mnb" value="200" min="0" style="width:46px"> <input type="number" id="mnc" value="100" min="0" style="width:46px"></span></label>
 <label>Cubetas máx. por puesto picking<input type="number" id="cap" value="6" min="1" max="30"></label>
 <label>Reponedores<input type="number" id="nr" value="2" min="0" max="10"></label>
 <label>Repetir pedidos ×<input type="number" id="rp" value="3" min="1" max="30"></label>
@@ -56,7 +56,7 @@ table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:ta
 <label>Layout activo<select id="sl"><option>A</option><option>B</option></select></label>
 <label>Plantilla<select id="tp"><option value="0">Lineal + retorno</option><option value="1">Doble ramal</option></select></label>
 <label>Puestos picking<input type="number" id="np" value="6" min="1" max="20"></label>
-<label>Puestos packing<input type="number" id="nm" value="3" min="1" max="8"></label>
+<label>Puestos packing<input type="number" id="nm" value="2" min="1" max="8"></label>
 <p>Nodos con z distinta forman niveles. Edita el JSON para cambiar caminos.</p>
 <textarea id="js" spellcheck="false" aria-label="Layout en JSON"></textarea>
 <button id="ap">Aplicar JSON</button>
