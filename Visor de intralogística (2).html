@@ -1,0 +1,271 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Visor de intralogística</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#eef0f3;--pn:#fff;--tx:#18212e;--mu:#65707f;--bd:#d5dae1;--ac:#d9480f;--tk:#e3e7ec;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0e131a;--pn:#161d27;--tx:#e4e9f0;--mu:#8b97a8;--bd:#283242;--ac:#ff8a4c;--tk:#222c3a}}
+:root[data-theme=dark]{--bg:#0e131a;--pn:#161d27;--tx:#e4e9f0;--mu:#8b97a8;--bd:#283242;--ac:#ff8a4c;--tk:#222c3a}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+body{margin:0;height:100%;background:var(--bg);color:var(--tx);font:13px/1.45 "IBM Plex Sans","Segoe UI",system-ui,sans-serif}
+#app{display:grid;grid-template-columns:280px minmax(0,1fr) 300px;height:100%}
+aside{background:var(--pn);padding:14px;overflow:auto;border:0 solid var(--bd)}
+aside:first-child{border-right-width:1px}#mt{border-left-width:1px}
+h1{font:600 17px "IBM Plex Sans",system-ui,sans-serif;margin:0 0 2px}h2{font:600 13px system-ui;margin:16px 0 6px;padding-top:12px;border-top:1px solid var(--bd)}
+p{color:var(--mu);margin:2px 0 6px}
+label{display:flex;justify-content:space-between;align-items:center;margin:4px 0;color:var(--mu)}
+input,select,textarea,button{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:5px;padding:4px 7px}
+input[type=number]{width:70px}button{cursor:pointer}button:hover{border-color:var(--ac)}button.p{background:var(--ac);border-color:var(--ac);color:#fff}
+textarea{width:100%;box-sizing:border-box;height:110px;font:11px ui-monospace,Consolas,monospace;resize:vertical}
+:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+main{position:relative;min-width:0;display:flex;flex-direction:column}
+#cv{flex:1;min-height:300px;cursor:grab;position:relative}
+#ccap{position:absolute;left:12px;bottom:156px;font-size:11px;color:var(--mu);pointer-events:none}
+#cols{position:absolute;left:8px;right:8px;bottom:8px;height:144px;display:flex;gap:2px;align-items:stretch;padding:4px;border-radius:6px;background:var(--pn);opacity:.92;border:1px solid var(--bd);box-sizing:border-box}
+.cl{flex:1;min-width:0;display:flex;flex-direction:column}.bs{flex:1;display:flex;align-items:flex-end;background:var(--tk);border-radius:1px}.bs i{display:block;width:62%}.bs u{display:block;width:38%;background:#20c997}.cl em{font:600 9px system-ui;font-style:normal;text-align:center;height:13px;line-height:13px}.cl s{text-decoration:none;writing-mode:vertical-rl;transform:rotate(180deg);font:9px ui-monospace,Consolas,monospace;color:var(--mu);height:56px;align-self:center;white-space:nowrap}#cv canvas{display:block;width:100%;height:100%}
+#bar{display:flex;gap:8px;align-items:center;padding:8px 12px;background:var(--pn);border-top:1px solid var(--bd);flex-wrap:wrap}
+#lg{color:var(--mu);margin-left:auto;font-size:12px}#lg b{display:inline-block;width:9px;height:9px;border-radius:2px;margin:0 3px 0 8px}
+.k{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bd)}.k b{font-variant-numeric:tabular-nums}
+.r{display:grid;grid-template-columns:34px 1fr 38px 28px;gap:6px;align-items:center;font-size:12px;font-variant-numeric:tabular-nums}
+.tk{height:6px;background:var(--tk);border-radius:3px;overflow:hidden}.tk i{display:block;height:100%;background:var(--ac)}
+table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}td,th{padding:3px 4px;border-bottom:1px solid var(--bd);text-align:right}td:first-child,th:first-child{text-align:left}
+.g{color:#2b8a3e}.b{color:#e03131}.w{color:#e03131;font-weight:600}
+#et,#ec{display:none}.ed #cv,.ed #bar{display:none}
+.ed #et{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 12px;background:var(--pn);border-bottom:1px solid var(--bd)}
+.ed #ec{display:block;flex:1;min-height:300px;width:100%;touch-action:none;cursor:crosshair}
+@media(max-width:900px){#app{grid-template-columns:1fr;height:auto}body,html{height:auto}aside{border-width:0!important}#cv{height:55vh;flex:none}}
+</style></head><body>
+<div id="app">
+<aside>
+<h1>Visor de intralogística</h1><p>Cubetas, picking, packing y expedición en varios niveles.</p>
+<button id="md" class="p" style="width:100%;margin-top:8px">Abrir editor de instalación</button>
+<h2>Pedidos</h2>
+<input type="file" id="fi" accept=".xlsx,.xls,.csv" style="width:100%;box-sizing:border-box">
+<p>Columnas: pedido, linea, sku, cantidad y, opcional, puesto.</p>
+<button id="em" class="p">Usar Pedidos_ABC.xlsx</button> <button id="ex">Ejemplo aleatorio</button><p id="inf"></p>
+<h2>Parámetros</h2>
+<label>Cubetas en circulación<input type="number" id="nb" value="40" min="1"></label>
+<label>Picking (s por unidad)<input type="number" id="tpu" value="3" min="0.5" step="0.5"></label>
+<label>Packing (s por pedido)<input type="number" id="tpk" value="15" min="1"></label>
+<label>Velocidad cinta (m/s)<input type="number" id="v" value="1.2" min="0.2" step="0.1"></label>
+<label>Salida de cubetas (s)<input type="number" id="hw" value="3" min="0.5" step="0.5"></label>
+<label>Picking (s por línea)<input type="number" id="tln" value="2" min="0" step="0.5"></label>
+<label>Stock por SKU (máx)<input type="number" id="stk" value="60" min="1"></label>
+<label>Mínimo reponer A / B / C<span><input type="number" id="mna" value="20" min="0" style="width:46px"> <input type="number" id="mnb" value="30" min="0" style="width:46px"> <input type="number" id="mnc" value="40" min="0" style="width:46px"></span></label>
+<label>Cubetas máx. por puesto picking<input type="number" id="cap" value="6" min="1" max="30"></label>
+<label>Reponedores<input type="number" id="nr" value="2" min="0" max="10"></label>
+<label>Repetir pedidos ×<input type="number" id="rp" value="3" min="1" max="30"></label>
+<label>Multiplicador stock almacén<input type="number" id="wm" value="10" min="0"></label>
+<label>Reposición sin categoría (s)<input type="number" id="tr" value="600" min="0" step="30"></label>
+<h2>Layout</h2>
+<label>Layout activo<select id="sl"><option>A</option><option>B</option></select></label>
+<label>Plantilla<select id="tp"><option value="0">Lineal + retorno</option><option value="1">Doble ramal</option></select></label>
+<label>Puestos picking<input type="number" id="np" value="6" min="1" max="20"></label>
+<label>Puestos packing<input type="number" id="nm" value="3" min="1" max="8"></label>
+<p>Nodos con z distinta forman niveles. Edita el JSON para cambiar caminos.</p>
+<textarea id="js" spellcheck="false" aria-label="Layout en JSON"></textarea>
+<button id="ap">Aplicar JSON</button>
+<h2>Instalación</h2>
+<p>Lo que haces en el editor se refleja al instante en el JSON de arriba y se guarda solo en este navegador. Para conservarlo o compartirlo, guarda el archivo.</p>
+<button id="nw">Nueva vacía</button> <button id="sv">Guardar archivo</button>
+<label style="margin-top:8px">Cargar archivo<input type="file" id="lf" accept=".json" style="width:150px"></label>
+</aside>
+<main><div id="et"></div><canvas id="ec"></canvas><div id="cv"><div id="ccap">Almacén por SKU: barra ancha = stock (A naranja, B azul, C gris; amarillo = reposición pedida; rojo &lt; 20 %) · barra fina verde = consumo total previsto · cifra vertical = gastado/previsto (uds)</div><div id="cols"></div></div>
+<div id="bar"><button id="pl" class="p" style="width:44px" aria-label="Reproducir o pausar">▶</button><button id="rs">Reiniciar</button>
+<label style="margin:0;gap:6px">Velocidad<select id="sp"><option>1</option><option>5</option><option selected>20</option><option>50</option><option>200</option></select></label>
+<span id="tm" style="font-variant-numeric:tabular-nums"></span>
+<span id="lg"><b style="background:#868e96"></b>vacía<b style="background:#1c7ed6"></b>picking<b style="background:#37b24d"></b>completa<b style="background:#fcc419"></b>paquete<b style="background:#ae3ec9"></b>puesto que pide reposición · altura del puesto azul = tiempo de picking</span></div></main>
+<aside id="mt"></aside>
+</div>
+<script>
+const $=id=>document.getElementById(id),dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
+let ORD=[],CAT={},LY={},cur='A',S,run=false,acc=0,ED=false;
+const P=()=>({nb:+$('nb').value,tpu:+$('tpu').value,tpk:+$('tpk').value,v:+$('v').value,hw:+$('hw').value,tln:+$('tln').value,stk:+$('stk').value,mna:+$('mna').value,mnb:+$('mnb').value,mnc:+$('mnc').value,wm:+$('wm').value,nr:+$('nr').value,cap:+$('cap').value||6,rep:+$('rp').value,tr:+$('tr').value});
+function gen(n,m,two){const N=[],E=[],add=(id,t,x,y,z)=>N.push({id,t,x,y,z}),ed=(a,b)=>E.push([a,b]);let xe;
+add('IN','in',0,0,0);
+if(!two){let p='IN';for(let i=1;i<=n;i++){add('P'+i,'pick',6*i,0,0);ed(p,'P'+i);p='P'+i}xe=6*n+6;add('J','n',xe,0,0);ed(p,'J');add('RC','n',xe,0,5);ed('J','RC');ed('RC','RL')}
+else{const h=Math.ceil(n/2);add('S','n',4,0,0);ed('IN','S');xe=10+6*h;add('J','n',xe,0,0);add('RC','n',xe,0,5);ed('J','RC');ed('RC','RL');
+[[-5,0,h],[5,h,n]].forEach(([y,a,b])=>{let p='S';for(let i=a+1;i<=b;i++){add('P'+i,'pick',4+6*(i-a),y,0);ed(p,'P'+i);p='P'+i}ed(p,'J')})}
+const xk=xe+6,xr=xk+8;add('RT','n',xr,0,5);add('RL','n',0,0,5);add('OUT','out',xr,0,-4);ed('RT','RL');ed('RL','IN');
+for(let k=1;k<=m;k++){const y=(k-(m+1)/2)*4;add('K'+k,'pack',xk,y,0);ed('J','K'+k);add('R'+k,'n',xk,y,5);ed('K'+k,'R'+k);ed('R'+k,'RT');add('O'+k,'n',xk,y,-4);ed('K'+k,'O'+k);ed('O'+k,'OUT')}
+return{two:!!two,nodes:N,edges:E}}
+function sample(){let s=7;const r=()=>(s=s*16807%2147483647)/2147483647;
+return Array.from({length:300},(_,i)=>({id:'PED'+(1000+i),lines:Array.from({length:1+Math.floor(r()*6)},()=>({sku:'SKU'+String(1+Math.floor(60*r()*r())).padStart(3,'0'),q:1+Math.floor(r()*4),pu:0}))}))}
+function Sim(L,O,p){
+const N={},D={},s={err:0},RQ=[],rc={n:0,s:0,mx:0,w:0,q:0},RB=Array.from({length:p.nr},()=>({j:null,rem:0,busy:0}));let t=0,nx=0,last=-99,done=0;
+L.nodes.forEach(n=>N[n.id]={...n,adj:[],q:[],cur:null,rem:0,busy:0,wait:0,cnt:0,qm:0,stk:{},rp:{},rot:0});
+L.edges.forEach(([a,b])=>{if(N[a]&&N[b])N[a].adj.push([b,Math.max(1,dist(N[a],N[b]))])});
+const V=Object.values(N),pk=V.filter(n=>n.t=='pick'),kk=V.filter(n=>n.t=='pack'),ord=Array.from({length:p.rep||1},()=>O).flat().map(o=>({...o,st:-1,en:-1}));
+const sk=[...new Set(O.flatMap(o=>o.lines.map(l=>l.sku)))].sort(),ix={};sk.forEach((k,i)=>ix[k]=i);
+const mp={},W={};for(const k in CAT)W[k]=CAT[k].a*p.wm;const W0={...W},TD={},CS={};O.forEach(o=>o.lines.forEach(l=>TD[l.sku]=(TD[l.sku]||0)+l.q*(p.rep||1)));
+if(Object.keys(CAT).length){const dem={};O.forEach(o=>o.lines.forEach(l=>dem[l.sku]=(dem[l.sku]||0)+l.q));const cn=pk.map(()=>({})),tn=pk.map(()=>0),ld=pk.map(()=>0);
+sk.slice().sort((a,b)=>(CAT[a]?.c||'~').localeCompare(CAT[b]?.c||'~')||dem[b]-dem[a]).forEach(k=>{const c=CAT[k]?.c||'~',f=i=>(cn[i][c]||0)*1e9+tn[i]*1e5+ld[i];let j=0;pk.forEach((_,i)=>{if(f(i)<f(j))j=i});cn[j][c]=(cn[j][c]||0)+1;tn[j]++;ld[j]+=dem[k];mp[k]=pk[j].id})}
+const pid=u=>(pk.find(n=>n.id=='P'+u)||pk[(u-1)%pk.length]).id,asg=l=>l.pu>0?pid(l.pu):mp[l.sku]||pk[Math.floor(ix[l.sku]/10)%pk.length].id;
+const own={};O.forEach(o=>o.lines.forEach(l=>{const k=asg(l);(own[k]=own[k]||new Set).add(l.sku)}));
+function dj(a){if(D[a])return D[a];const d={[a]:0},pv={},v=new Set;for(;;){let u=null;for(const k in d)if(!v.has(k)&&(u==null||d[k]<d[u]))u=k;if(u==null)break;v.add(u);for(const[w,l]of N[u].adj)if(d[w]==null||d[u]+l<d[w]){d[w]=d[u]+l;pv[w]=u}}return D[a]={d,pv}}
+const path=(a,b)=>{const{d,pv}=dj(a);if(d[b]==null)return null;const r=[b];while(r[0]!=a)r.unshift(pv[r[0]]);return r};
+function adv(e,dt){let m=p.v*dt;while(m>0&&e.i<e.path.length-1){const l=dist(N[e.path[e.i]],N[e.path[e.i+1]]),r=l-e.d;if(m>=r){m-=r;e.i++;e.d=0}else{e.d+=m;m=0}}return e.i>=e.path.length-1}
+const pos=e=>{const a=N[e.path[e.i]],c=N[e.path[Math.min(e.i+1,e.path.length-1)]],f=e.d/(dist(a,c)||1);return[a.x+(c.x-a.x)*f,a.y+(c.y-a.y)*f,a.z+(c.z-a.z)*f]};
+const B=Array.from({length:p.nb},()=>({s:'i',at:'IN',o:null,need:{},path:['IN'],i:0,d:0})),idle=[...B],PK=[],load=c=>c.q.length+(c.cur?1:0),work=(n,b)=>{let u=0,l=0;for(const[sku,q]of b.need[n.id].ls){const av=Math.min(q,n.stk[sku]??p.stk);if(av>0){u+=av;l++}}return(n.tpu??p.tpu)*u+(n.tln??p.tln)*l+2};
+function arr(b){b.at=b.tg;if(b.tg=='IN'){b.s='i';b.o=null;idle.push(b)}else{const n=N[b.tg];if(n.t=='pick'&&load(n)>=(n.cap??p.cap)){s.rj=(s.rj||0)+1;leg(b);return}b.s='q';b.tq=t;n.q.push(b)}}
+function leg(b){const ids=Object.keys(b.need);let tg,w=0;
+if(ids.length){const{d}=dj(b.at),dd=c=>c==b.at?(d.IN??1e9)+(dj('IN').d[c]??1e9):(d[c]??1e9);tg=ids.reduce((a,c)=>dd(c)<dd(a)?c:a);const nd=b.need[tg];w=p.tpu*nd.u+p.tln*nd.l+2}
+else if(b.o){tg=kk.reduce((a,c)=>load(c)<load(a)?c:a).id;w=N[tg].tpk??p.tpk}else tg='IN';
+b.tg=tg;b.w=w;if(tg==b.at&&tg!='IN'){const a=path(b.at,'IN'),c=path('IN',tg);b.path=a&&c?a.concat(c.slice(1)):null}else b.path=path(b.at,tg);b.i=0;b.d=0;b.s='m';if(!b.path){b.s='x';s.err=1}else if(b.path.length==1)arr(b)}
+function go(){const o=ord[nx++],b=idle.shift();o.st=t;b.o=o;b.need={};o.lines.forEach(l=>{const k=asg(l),d=b.need[k]||(b.need[k]={u:0,l:0,ls:[]});d.u+=l.q;d.l++;d.ls.push([l.sku,l.q])});leg(b)}
+s.step=dt=>{if(s.halt)return;t+=dt;if(idle.length&&nx<ord.length&&t-last>=p.hw){last=t;go()}
+for(const b of B)if(b.s=='m'&&adv(b,dt))arr(b);
+for(let k=PK.length-1;k>=0;k--)if(adv(PK[k],dt)){PK[k].o.en=t;done++;PK.splice(k,1)}
+for(const n of pk.concat(kk)){
+if(!n.cur&&n.q.length){n.cur=n.q.shift();n.rem=n.t=='pick'?work(n,n.cur):n.cur.w;n.cur.w=n.rem;n.wait+=t-n.cur.tq;n.cnt++}
+if(n.cur){n.busy+=dt;n.rem-=dt;if(n.rem<=0){const b=n.cur;n.cur=null;if(n.t=='pick'){const sh=[];for(const[sku,q]of b.need[n.id].ls){let c=n.stk[sku]??p.stk;const av=Math.min(q,c);c-=av;CS[sku]=(CS[sku]||0)+av;if(av<q){n.rot++;sh.push([sku,q-av])}n.stk[sku]=c;if(c<=(p[{A:'mna',B:'mnb',C:'mnc'}[CAT[sku]?.c]]??p.mnb)&&n.rp[sku]==null){n.rp[sku]=1;if(W[sku]!=null&&W[sku]<=0)s.halt=s.halt||{sku,t};RQ.push({n,sku,t0:t})}}if(sh.length){b.need[n.id]={ls:sh,u:sh.reduce((a,x)=>a+x[1],0),l:sh.length};s.rl=(s.rl||0)+1}else delete b.need[n.id]}else{const pp=path(n.id,'OUT');if(pp)PK.push({path:pp,i:0,d:0,o:b.o});else s.err=1;b.o=null}leg(b)}}
+n.qm=Math.max(n.qm,n.q.length);}rc.q=Math.max(rc.q,RQ.length);for(const r of RB){if(!r.j&&RQ.length){r.j=RQ.shift();const c=CAT[r.j.sku]?.r;r.rem=c?c*60:p.tr;rc.w+=t-r.j.t0}if(r.j){r.busy+=dt;r.rem-=dt;if(r.rem<=0){const{n,sku}=r.j;if(W[sku]!=null&&W[sku]<=0)s.halt=s.halt||{sku,t};const q=Math.min(p.stk-(n.stk[sku]||0),W[sku]??1e9);n.stk[sku]=(n.stk[sku]||0)+q;if(W[sku]!=null)W[sku]-=q;delete n.rp[sku];rc.n++;rc.s+=t-r.j.t0;rc.mx=Math.max(rc.mx,t-r.j.t0);r.j=null}}}};
+s.m=()=>{const fin=ord.filter(o=>o.en>=0).map(o=>o.en-o.st).sort((a,b)=>a-b),mean=a=>a.reduce((x,y)=>x+y,0)/(a.length||1),u=n=>t?n.busy/t:0,pu=pk.map(u),ku=kk.map(u),
+cv=a=>{const m=mean(a);return m?Math.sqrt(mean(a.map(x=>(x-m)**2)))/m:0},all=pk.concat(kk);
+return{t,done,tot:ord.length,thr:t?done/t*3600:0,lt:mean(fin),p95:fin.length?fin[Math.floor(fin.length*.95)]:0,pu:mean(pu),ku:mean(ku),cvp:cv(pu),cvk:cv(ku),qm:Math.max(0,...all.map(n=>n.qm)),w:mean(all.map(n=>n.cnt?n.wait/n.cnt:0)),eta:done?(ord.length-done)/(done/t):null,use:B.filter(b=>b.s!='i').length,rot:pk.reduce((a,n)=>a+n.rot,0),rl:s.rl||0,rj:s.rj||0,halt:s.halt,rn:rc.n,rcy:rc.n?rc.s/rc.n:0,rmx:rc.mx,rq:rc.q,ru:t&&RB.length?mean(RB.map(r=>r.busy/t)):0,err:s.err}};
+const dur=q=>{const c=CAT[q.sku]?.r;return c?c*60:p.tr};
+Object.assign(s,{N,pk,kk,B,PK,pos,W,W0,sk,TD,CS,pl:()=>{const o=[];let ah=RB.reduce((a,r)=>a+(r.j?r.rem:0),0);RB.forEach(r=>r.j&&o.push({sku:r.j.sku,n:r.j.n.id,t0:r.j.t0,st:'en curso',eta:r.rem}));RQ.forEach(q=>{const d=dur(q);o.push({sku:q.sku,n:q.n.id,t0:q.t0,st:'en cola',eta:ah/Math.max(1,RB.length)+d});ah+=d});return o.sort((a,b)=>a.eta-b.eta)},mix:n=>{if(!Object.keys(CAT).length)return(own[n.id]?own[n.id].size:0)+'';const r={};for(const k of own[n.id]||[]){const c=CAT[k]?.c||'-';r[c]=(r[c]||0)+1}return Object.entries(r).sort().map(([c,v])=>c+v).join(' ')},low:n=>Object.entries(n.stk).sort((a,b)=>a[1]-b[1])[0],fin:()=>done>=ord.length,ord,all:()=>pk.concat(kk)});return s}
+function fast(L){const s=Sim(L,ORD,P());let g=0;while(!s.fin()&&!s.err&&!s.halt&&g++<3e5)s.step(.5);return s.m()}
+const ok=L=>L&&L.nodes&&L.edges&&['IN','OUT'].every(i=>L.nodes.some(n=>n.id==i))&&['pick','pack'].every(x=>L.nodes.some(n=>n.t==x));
+/* 3D */
+const cvEl=$('cv'),R=new THREE.WebGLRenderer({antialias:true,alpha:true}),sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(45,1,.1,1000),grp=new THREE.Group(),tg=new THREE.Vector3();
+cvEl.appendChild(R.domElement);sc.add(grp,new THREE.AmbientLight(0xffffff,.75));const dl=new THREE.DirectionalLight(0xffffff,.6);dl.position.set(1,2,1);sc.add(dl);
+let th=-1.2,ph=.9,rad=70,M={},bm=[],pm=[];
+const mat=c=>new THREE.MeshLambertMaterial({color:c}),CM={in:mat(0x2f9e44),pick:mat(0x1c7ed6),pickR:mat(0xae3ec9),pack:mat(0xe8590c),out:mat(0x868e96),n:mat(0xadb5bd)},BM={g:mat(0x868e96),b:mat(0x1c7ed6),c:mat(0x37b24d)},PM=mat(0xfcc419);
+function camU(){cam.position.set(tg.x+rad*Math.sin(ph)*Math.cos(th),tg.y+rad*Math.cos(ph),tg.z+rad*Math.sin(ph)*Math.sin(th));cam.lookAt(tg)}
+function rz(){const w=cvEl.clientWidth,h=cvEl.clientHeight;R.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()}
+addEventListener('resize',rz);let dr=null;
+cvEl.onpointerdown=e=>{dr=e;cvEl.setPointerCapture(e.pointerId)};cvEl.onpointerup=()=>dr=null;
+cvEl.onpointermove=e=>{if(!dr)return;th+=(e.clientX-dr.clientX)*.008;ph=Math.min(1.5,Math.max(.1,ph-(e.clientY-dr.clientY)*.008));dr=e;camU()};
+cvEl.onwheel=e=>{e.preventDefault();rad=Math.min(200,Math.max(15,rad*(1+e.deltaY*.001)));camU()};
+function build(L){while(grp.children.length)grp.remove(grp.children[0]);M={};bm=[];pm=[];const by={};
+const pts=[];L.nodes.forEach(n=>{by[n.id]=n;const st=n.t!='n',m=new THREE.Mesh(new THREE.BoxGeometry(st?2.2:.7,1,st?2.2:.7),CM[n.t]||CM.n);m.position.set(n.x,n.z+.5,n.y);grp.add(m);M[n.id]=m});
+L.edges.forEach(([a,b])=>{if(by[a]&&by[b])pts.push(new THREE.Vector3(by[a].x,by[a].z+.1,by[a].y),new THREE.Vector3(by[b].x,by[b].z+.1,by[b].y))});
+grp.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0x8a94a6})));
+const xs=L.nodes.map(n=>n.x);tg.set((Math.min(...xs)+Math.max(...xs))/2,0,0);rad=Math.max(40,(Math.max(...xs)-Math.min(...xs))*1.1);
+for(let i=0;i<S.B.length;i++){const m=new THREE.Mesh(new THREE.BoxGeometry(1,.6,.8),BM.g);grp.add(m);bm.push(m)}camU()}
+function draw(){S.B.forEach((b,i)=>{const m=bm[i];m.visible=b.s!='i';if(!m.visible)return;const[x,y,z]=S.pos(b);m.position.set(x,z+.9,y);m.material=b.o?(Object.keys(b.need).length?BM.b:BM.c):BM.g});
+while(pm.length<S.PK.length){const m=new THREE.Mesh(new THREE.BoxGeometry(.7,.7,.7),PM);grp.add(m);pm.push(m)}
+pm.forEach((m,i)=>{const q=S.PK[i];m.visible=!!q;if(q){const[x,y,z]=S.pos(q);m.position.set(x,z+.7,y)}});
+S.all().forEach(n=>{const m=M[n.id],h=n.t=='pick'?.5+(n.cur?n.cur.w:0)*.15:1+n.q.length*.5;if(n.t=='pick')m.material=Object.keys(n.rp).length?CM.pickR:CM.pick;m.scale.y=h;m.position.y=n.z+h/2})}
+/* UI */
+const ft=s=>{s=Math.round(s);return Math.floor(s/3600)+':'+String(Math.floor(s%3600/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')},pc=x=>Math.round(x*100)+'%';
+function cols(){const el=$('cols'),cc={A:'#e8590c',B:'#1c7ed6'};$('ccap').style.display=el.style.display=Object.keys(CAT).length?'flex':'none';if(!Object.keys(CAT).length)return;
+if(el.dataset.k!=S.sk.join()){el._o=S.sk.slice().sort((a,b)=>(CAT[a]?.c||'~').localeCompare(CAT[b]?.c||'~')||a-b);el.innerHTML=el._o.map(k=>'<div class="cl"><div class="bs"><i></i><u></u></div><em>'+k+'</em><s></s></div>').join('');el.dataset.k=S.sk.join()}
+const PL={};S.pl().forEach(x=>PL[x.sku]=x);
+el._o.forEach((k,i)=>{const f=S.W0[k]?Math.max(0,S.W[k]/S.W0[k]):0,d=el.children[i],b=d.firstChild.firstChild,u=d.firstChild.lastChild,pd=PL[k],dm=S.W0[k]?Math.min(1,S.TD[k]/S.W0[k]):0;b.style.height=Math.max(2,f*100)+'%';b.style.background=pd?'#fab005':f<.2?'#e03131':(cc[CAT[k]?.c]||'#868e96');u.style.height=Math.max(2,dm*100)+'%';d.title='SKU '+k+' ('+(CAT[k]?.c||'-')+'): almacén '+S.W[k]+' de '+S.W0[k]+' · gastado '+(S.CS[k]||0)+' de '+S.TD[k]+' uds previstas'+(pd?' · pedido por '+pd.n+' a las '+ft(pd.t0)+', '+pd.st+', llega en ~'+Math.ceil(pd.eta/60)+' min':'');d.lastChild.textContent=(S.CS[k]||0)+'/'+S.TD[k]})}
+function panel(){if(ED||!S)return;cols();const m=S.m();$('tm').textContent='t = '+ft(m.t);
+let h=(m.halt?`<p class="w">PARADA: se agotó el stock de almacén del SKU ${m.halt.sku} a las ${ft(m.halt.t)}. El stock de almacén es crítico.</p>`:'')+(m.err?'<p class="w">El layout tiene tramos sin salida o puestos inalcanzables.</p>':'');
+const k=(a,b)=>`<div class="k"><span>${a}</span><b>${b}</b></div>`;
+h+=k('Pedidos completados',m.done+' / '+m.tot)+k('Pedidos por hora',m.thr.toFixed(0))+k('Lead time medio / p95',ft(m.lt)+' / '+ft(m.p95))+k('Fin estimado',m.eta==null?'—':ft(m.t+m.eta))+k('Cubetas en uso',m.use+' / '+S.B.length)+k('Desequilibrio picking',pc(m.cvp))+k('Desequilibrio packing',pc(m.cvk))+k('Cola máxima',m.qm)+k('Líneas sin stock en puesto',m.rot)+k('Recirculaciones por falta de stock',m.rl)+k('Cubetas que pasan por puesto lleno',m.rj)+k('Reposiciones hechas',m.rn)+k('Aviso a reposición (medio / máx)',ft(m.rcy)+' / '+ft(m.rmx))+k('Cola de reposición máx',m.rq)+k('Uso de reponedores',pc(m.ru))+k('Espera media en puesto',m.w.toFixed(0)+' s');
+if(Object.keys(CAT).length){const tc={A:0,B:0,C:0},gc={A:0,B:0,C:0};let cr=0;for(const q in S.TD){const c=CAT[q]?.c;if(c){tc[c]+=S.TD[q];gc[c]+=S.CS[q]||0}if(S.TD[q]>S.W0[q]+P().stk)cr++}
+h+='<h2>Consumo de producto (gastado / previsto)</h2>'+['A','B','C'].map(c=>k('Categoría '+c,gc[c]+' / '+tc[c]+' uds')).join('')+k('Total',(gc.A+gc.B+gc.C)+' / '+(tc.A+tc.B+tc.C)+' uds')+k('SKU con consumo > stock disponible',cr);
+const pl=S.pl();h+='<h2>Reposiciones pedidas</h2>'+(pl.length?pl.slice(0,8).map(x=>`<div class="k"><span>SKU ${x.sku} · ${x.n} · pedido ${ft(x.t0)}</span><b>${x.st}, ~${Math.ceil(x.eta/60)} min</b></div>`).join('')+(pl.length>8?`<p>y ${pl.length-8} más</p>`:''):'<p>Ninguna ahora mismo.</p>')}
+h+='<h2>Utilización por puesto</h2>';S.all().forEach(n=>{const u=m.t?n.busy/m.t:0;h+=`<div class="r"><span>${n.id}</span><span class="tk"><i style="width:${u*100}%"></i></span><b>${pc(u)}</b><span>${n.q.length+(n.cur?1:0)}</span></div>`;const lw=n.t=='pick'&&S.low(n);if(lw)h+=`<div style="font-size:11px;color:var(--mu);margin:0 0 4px 40px">${S.mix(n)?'SKU '+S.mix(n)+' · ':''}${lw[0]}: ${lw[1]} uds${S.W[lw[0]]!=null?' · almacén '+S.W[lw[0]]:''}${n.rp[lw[0]]!=null?' (reposición en curso)':''}</div>`});
+h+='<h2>Comparar A y B</h2><p>Mismos pedidos y parámetros, sin animación.</p><button id="cp" class="p">Comparar</button><div id="cr"></div>';
+$('mt').innerHTML=h;$('cp').onclick=cmp}
+function cmp(){if(!ORD.length)return;const a=fast(LY.A),b=fast(LY.B);
+const rows=[['Tiempo total',x=>ft(x.t),'t',1],['Pedidos por hora',x=>x.thr.toFixed(0),'thr',-1],['Lead time medio',x=>ft(x.lt),'lt',1],['Lead time p95',x=>ft(x.p95),'p95',1],['Utilización picking',x=>pc(x.pu),'pu',0],['Utilización packing',x=>pc(x.ku),'ku',0],['Desequilibrio picking',x=>pc(x.cvp),'cvp',1],['Desequilibrio packing',x=>pc(x.cvk),'cvk',1],['Cola máxima',x=>x.qm,'qm',1],['Espera media (s)',x=>x.w.toFixed(0),'w',1],['Líneas sin stock en puesto',x=>x.rot,'rot',1],['Recirculaciones',x=>x.rl,'rl',1],['Pasan por puesto lleno',x=>x.rj,'rj',1],['Aviso a reposición medio',x=>ft(x.rcy),'rcy',1],['Uso de reponedores',x=>pc(x.ru),'ru',0]];
+let h='<table><tr><th></th><th>A</th><th>B</th><th>Δ B</th></tr>';
+rows.forEach(([n,f,k,d])=>{const dv=a[k]?(b[k]-a[k])/a[k]*100:0,c=!d||Math.abs(dv)<.5?'':(dv*d>0?'b':'g');h+=`<tr><td>${n}</td><td>${f(a)}</td><td>${f(b)}</td><td class="${c}">${dv>0?'+':''}${dv.toFixed(1)}%</td></tr>`});
+$('cr').innerHTML=h+'</table>'+(a.halt||b.halt?'<p class="w">Parada por falta de stock de almacén: '+[a,b].map((x,i)=>x.halt?'AB'[i]+' (SKU '+x.halt.sku+', '+ft(x.halt.t)+')':'').filter(Boolean).join(', ')+'</p>':'')+(a.err||b.err?'<p class="w">Un layout tiene errores de conexión.</p>':'')+(a.done<a.tot||b.done<b.tot?'<p class="w">Algún layout no terminó todos los pedidos.</p>':'')}
+function reset(){if(!ok(LY[cur]))return;run=false;$('pl').textContent='▶';S=Sim(LY[cur],ORD,P());build(LY[cur]);draw();panel()}
+function show(){$('js').value=JSON.stringify(LY[cur]);$('tp').value=LY[cur].two?1:0;try{localStorage.setItem('vi-layouts',JSON.stringify({A:LY.A,B:LY.B}))}catch{}if(ED)eref()}
+function regen(){LY[cur]=gen(+$('np').value,+$('nm').value,+$('tp').value);show();reset()}
+function info(){const l=ORD.reduce((a,o)=>a+o.lines.length,0),pu=new Set,mu={};ORD.forEach(o=>o.lines.forEach(x=>{if(x.pu>0){pu.add(x.pu);(mu[x.sku]=mu[x.sku]||new Set).add(x.pu)}}));
+const np=LY[cur]?LY[cur].nodes.filter(n=>n.t=='pick').length:0,mx=Math.max(0,...pu),mm=Object.values(mu).filter(x=>x.size>1).length;
+$('inf').textContent=ORD.length+' pedidos, '+l+' líneas'+(pu.size?'. Columna puesto: '+pu.size+' puestos (hasta el '+mx+')'+(mx>np?'; el layout tiene '+np+' pickers y los puestos mayores se pliegan':'')+(mm?'; '+mm+' SKU aparecen en más de un puesto':''):'')}
+$('ex').onclick=()=>{ORD=sample();CAT={};info();reset()};
+const EMB={"l":[[1,11,4],[1,1,5],[1,5,3],[1,4,5],[2,19,4],[2,13,4],[2,30,5],[2,2,4],[3,6,3],[3,1,4],[3,4,3],[3,10,2],[3,2,3],[3,5,2],[3,22,3],[4,8,4],[4,3,3],[4,12,3],[5,24,2],[5,1,5],[5,25,5],[5,16,1],[5,6,1],[6,3,4],[6,49,4],[6,6,3],[6,2,1],[7,2,3],[7,27,3],[7,10,1],[7,24,3],[7,18,2],[8,8,1],[8,53,3],[8,5,1],[9,8,4],[9,26,2],[9,11,5],[10,28,2],[10,8,4],[10,17,1],[10,1,3],[11,4,1],[11,5,5],[11,1,5],[12,4,2],[12,2,5],[12,6,1],[12,17,3],[13,5,2],[13,6,4],[13,3,2],[13,4,1],[13,47,1],[13,20,3],[14,9,4],[14,3,2],[14,20,5],[14,2,1],[14,7,4],[15,57,3],[15,11,1],[15,8,2],[15,17,4],[16,26,2],[16,21,5],[16,3,5],[16,1,5],[17,5,4],[17,4,5],[17,3,3],[18,43,2],[18,29,2],[18,5,3],[18,14,2],[19,6,5],[19,37,2],[19,7,5],[19,3,5],[19,4,5],[19,15,1],[20,4,5],[20,10,5],[20,33,5],[20,6,1],[21,3,4],[21,60,3],[21,8,4],[21,2,5],[22,1,4],[22,3,1],[22,15,2],[22,25,3],[22,7,5],[23,1,5],[23,6,4],[23,60,1],[24,8,3],[24,52,2],[24,28,3],[25,1,4],[26,17,5],[26,14,3],[26,7,2],[26,4,5],[26,15,1],[27,2,1],[27,7,5],[28,7,5],[28,48,5],[28,29,1],[29,4,3],[29,8,2],[29,3,3],[29,40,2],[30,28,1],[30,4,5],[30,13,2],[30,10,5],[31,3,4],[31,22,5],[31,8,4],[31,24,3],[32,8,5],[32,1,4],[32,5,4],[32,2,1],[33,39,5],[33,29,4],[33,24,2],[33,4,4],[33,1,1],[34,29,2],[34,45,5],[34,2,3],[35,7,3],[35,1,4],[35,23,5],[35,22,4],[35,3,3],[36,7,3],[36,8,5],[36,4,5],[36,31,5],[37,6,5],[37,3,1],[37,9,1],[37,21,3],[38,3,5],[38,5,4],[38,59,1],[38,16,2],[39,6,4],[39,8,3],[39,2,5],[40,3,5],[40,6,1],[40,12,4],[40,4,1],[41,3,5],[41,1,5],[42,11,4],[42,4,4],[42,35,2],[42,28,2],[42,1,4],[43,4,1],[43,15,3],[43,3,3],[43,2,2],[43,46,3],[44,8,4],[44,6,2],[44,24,2],[45,24,2],[45,3,4],[45,2,5],[45,7,5],[46,6,1],[46,7,2],[46,21,5],[46,17,5],[47,56,2],[47,2,4],[47,6,5],[47,5,4],[48,28,5],[48,4,5],[48,3,4],[48,8,5],[49,6,1],[49,4,3],[49,3,5],[49,43,4],[49,8,5],[49,31,3],[50,8,3],[50,1,2],[50,60,5],[50,27,4],[51,51,1],[51,37,5],[51,26,3],[51,3,1],[52,7,1],[52,3,1],[52,6,4],[52,1,1],[53,6,4],[53,56,4],[54,4,3],[54,23,1],[54,7,1],[55,6,5],[55,49,4],[55,59,4],[55,8,1],[56,17,4],[56,3,3],[56,5,4],[56,53,1],[57,8,5],[57,7,1],[57,22,3],[57,1,3],[57,14,2],[57,9,3],[58,27,3],[58,3,2],[58,50,4],[58,1,2],[59,3,3],[59,10,3],[59,16,1],[59,4,1],[60,2,3],[60,30,3],[60,4,1],[60,12,3],[61,10,4],[61,6,3],[61,9,1],[61,8,5],[61,44,1],[62,3,3],[62,19,1],[62,4,2],[63,6,4],[63,16,3],[63,4,4],[64,5,5],[64,21,2],[64,1,5],[64,8,2],[64,60,4],[65,59,5],[65,1,1],[65,4,1],[65,5,4],[66,40,3],[66,29,1],[67,29,2],[67,5,4],[67,2,2],[67,27,2],[67,18,3],[68,9,2],[68,57,3],[68,13,5],[68,1,2],[68,26,1],[69,4,3],[69,15,1],[69,44,4],[69,2,5],[70,2,5],[70,3,2],[70,10,3],[70,6,1],[70,16,4],[71,17,2],[71,3,5],[71,12,3],[71,5,4],[72,7,5],[72,34,2],[72,27,1],[72,2,2],[72,6,2],[72,4,3],[73,1,3],[73,22,1],[73,13,4],[73,5,4],[74,19,3],[74,8,1],[74,6,3],[74,1,4],[75,2,3],[75,30,1],[75,34,2],[75,8,1],[76,26,5],[76,8,5],[76,2,4],[76,3,5],[76,6,1],[77,30,4],[77,22,4],[77,27,2],[77,31,2],[78,3,2],[78,5,3],[78,2,5],[79,22,2],[79,29,1],[79,6,1],[79,11,4],[80,3,3],[80,41,3],[80,28,4],[80,54,2],[81,24,4],[81,29,1],[81,1,4],[81,18,1],[82,5,4],[82,41,4],[82,24,1],[83,28,2],[83,23,3],[83,4,1],[83,22,3],[84,2,3],[84,29,3],[85,27,2],[85,3,3],[85,25,5],[85,7,5],[86,5,4],[86,24,3],[86,3,1],[87,1,4],[88,3,2],[88,6,5],[88,29,3],[88,52,5],[89,4,4],[89,14,3],[89,6,1],[90,55,2],[90,8,1],[90,43,3],[90,2,2],[90,52,5],[91,3,2],[91,50,3],[91,5,2],[91,2,5],[92,6,2],[92,19,1],[92,4,3],[92,13,3],[93,7,5],[93,5,2],[93,11,5],[94,4,4],[94,18,4],[94,1,5],[94,42,1],[94,8,2],[94,22,4],[95,19,3],[95,13,1],[95,5,2],[95,1,5],[96,13,1],[96,5,1],[96,4,4],[96,29,3],[97,17,5],[97,4,1],[98,5,5],[98,7,4],[98,6,1],[98,4,5],[98,2,3],[98,11,1],[98,50,5],[99,14,3],[99,32,2],[99,9,3],[99,4,1],[100,8,5],[100,1,1],[100,5,5],[101,6,3],[101,9,2],[101,15,4],[101,7,5],[101,5,1],[101,3,2],[102,7,4],[102,33,5],[102,24,5],[103,3,1],[103,2,3],[103,8,1],[103,17,5],[103,6,3],[104,25,4],[104,19,4],[104,12,5],[104,3,3],[104,4,3],[104,1,4],[105,4,1],[105,7,4],[105,28,1],[105,1,2],[106,6,5],[106,13,3],[106,3,3],[106,19,5],[107,7,4],[107,4,5],[107,16,2],[107,1,2],[108,20,5],[108,21,2],[108,2,5],[109,6,3],[109,3,5],[109,50,5],[109,8,1],[109,1,5],[110,4,1],[110,28,2],[110,7,2],[110,25,2],[111,13,5],[111,57,4],[111,8,4],[111,46,4],[112,30,1],[112,9,1],[112,17,3],[112,7,5],[113,25,4],[113,8,2],[113,32,3],[113,20,1],[113,6,3],[113,3,4],[114,4,5],[114,13,1],[114,22,2],[114,8,5],[114,14,1],[114,3,5],[115,2,3],[115,5,4],[115,6,4],[115,7,5],[116,8,5],[116,2,4],[116,4,5],[116,20,5],[117,16,5],[117,1,3],[117,6,3],[117,9,5],[117,7,2],[118,3,5],[118,7,2],[118,36,4],[118,12,1],[119,16,3],[119,27,3],[119,20,2],[119,5,5],[120,1,5],[120,6,1],[120,22,3],[121,27,1],[121,47,4],[121,6,2],[122,19,4],[122,8,2],[122,10,2],[122,3,1],[123,3,1],[123,7,1],[123,1,3],[124,5,3],[124,16,3],[124,6,4],[124,2,1],[125,7,5],[125,2,1],[125,14,3],[125,1,1],[126,6,4],[126,8,2],[126,1,4],[126,18,1],[126,3,1],[127,7,1],[127,1,1],[127,6,4],[127,4,1],[128,5,4],[128,22,2],[128,6,1],[128,23,5],[129,26,5],[129,4,4],[129,1,5],[129,2,1],[130,8,3],[130,60,3],[130,5,1],[130,16,2],[131,22,1],[131,12,4],[131,19,1],[131,46,4],[131,3,3],[132,1,5],[132,3,1],[132,4,4],[132,19,4],[132,12,4],[133,3,4],[133,17,3],[133,22,4],[134,3,2],[134,11,4],[134,21,3],[134,2,4],[135,25,1],[135,50,1],[135,2,4],[135,1,4],[135,6,3],[135,19,1],[136,48,2],[137,6,2],[137,19,3],[137,1,4],[137,18,2],[138,10,1],[138,2,2],[138,23,5],[138,28,4],[139,9,4],[139,2,4],[139,56,5],[139,23,3],[140,5,4],[140,7,4],[140,6,1],[140,10,3],[140,4,1],[140,30,4],[141,25,1],[141,2,1],[141,50,1],[141,12,1],[141,26,5],[142,16,1],[142,6,5],[142,20,2],[142,51,4],[143,4,2],[143,25,1],[143,8,1],[144,7,5],[144,6,4],[144,21,1],[144,3,1],[144,30,4],[145,25,3],[145,2,1],[145,30,2],[145,4,3],[146,7,5],[146,11,3],[146,5,2],[147,1,1],[147,28,4],[147,4,3],[147,5,4],[148,23,2],[148,5,5],[148,30,3],[149,16,4],[149,4,5],[149,1,1],[150,45,1],[150,2,1],[150,19,2],[150,7,1],[151,20,1],[151,14,1],[151,11,2],[152,7,5],[152,24,3],[152,2,5],[152,4,2],[152,20,2],[153,5,5],[153,9,5],[153,7,5],[153,8,5],[153,6,3],[154,19,5],[154,5,3],[154,17,4],[155,4,3],[155,5,1],[155,2,1],[155,3,4],[155,6,5],[156,8,3],[156,22,3],[156,3,2],[156,4,3],[157,7,4],[157,19,4],[157,54,1],[157,8,1],[158,4,4],[158,2,1],[158,5,1],[158,6,3],[158,3,2],[159,1,3],[159,8,3],[159,5,1],[159,55,1],[160,8,2],[160,17,5],[160,2,4],[160,30,2],[161,7,5],[161,29,3],[161,8,4],[161,6,5],[162,6,1],[162,3,1],[162,1,2],[162,47,3],[162,8,4],[163,25,5],[163,6,3],[163,1,2],[163,14,3],[164,1,1],[164,3,5],[164,11,2],[164,6,1],[164,59,3],[165,2,5],[165,22,4],[166,9,4],[166,23,5],[166,3,5],[166,8,3],[167,7,5],[167,6,5],[167,29,4],[167,58,3],[168,5,4],[168,12,4],[168,11,3],[169,19,5],[169,45,3],[169,3,5],[169,4,4],[170,13,2],[170,3,3],[170,4,5],[170,1,2],[171,1,5],[171,7,5],[171,13,1],[172,4,1],[172,3,2],[172,20,2],[172,19,5],[173,7,3],[173,17,5],[173,40,5],[174,22,2],[174,10,4],[174,13,2],[174,41,4],[175,6,2],[175,8,5],[175,16,1],[175,38,3],[176,25,3],[176,1,5],[176,4,4],[176,6,5],[176,23,3],[176,12,5],[177,4,2],[177,2,3],[177,18,1],[177,19,4],[178,43,1],[178,7,3],[178,8,2],[179,2,3],[179,1,5],[179,7,3],[180,5,3],[180,4,3],[180,2,2],[181,49,1],[181,26,4],[181,8,5],[182,46,1],[182,60,5],[182,13,4],[183,4,3],[183,1,3],[183,23,5],[183,8,4],[184,12,5],[184,36,2],[184,3,2],[184,9,3],[185,11,2],[185,7,4],[185,2,2],[185,5,4],[186,5,3],[186,15,5],[186,28,2],[187,5,4],[187,17,5],[187,4,4],[187,47,2],[187,26,1],[187,9,4],[188,7,1],[188,4,5],[188,5,2],[188,54,1],[189,6,2],[189,8,5],[189,57,3],[190,13,2],[190,8,4],[190,6,1],[190,3,4],[191,5,1],[191,21,2],[191,12,3],[192,20,5],[192,3,4],[192,8,1],[193,39,1],[193,6,4],[193,17,4],[193,2,2],[193,54,1],[193,13,2],[194,4,3],[194,2,4],[194,10,5],[194,9,2],[195,2,1],[195,58,4],[195,35,4],[195,7,1],[195,3,5],[196,26,3],[196,7,2],[196,18,5],[196,8,1],[196,3,3],[197,26,5],[197,55,1],[197,4,1],[197,8,1],[197,6,3],[198,37,1],[199,7,1],[199,30,5],[199,28,4],[199,4,5],[200,22,3],[200,6,2],[200,43,1],[200,8,3],[200,27,2]],"c":{"1":{"c":"A","a":200,"r":5},"2":{"c":"A","a":250,"r":5},"3":{"c":"A","a":260,"r":5},"4":{"c":"A","a":200,"r":5},"5":{"c":"A","a":220,"r":5},"6":{"c":"A","a":230,"r":5},"7":{"c":"A","a":260,"r":5},"8":{"c":"A","a":240,"r":5},"9":{"c":"B","a":200,"r":8},"10":{"c":"B","a":180,"r":8},"11":{"c":"B","a":190,"r":8},"12":{"c":"B","a":200,"r":8},"13":{"c":"B","a":190,"r":8},"14":{"c":"B","a":190,"r":8},"15":{"c":"B","a":180,"r":8},"16":{"c":"B","a":200,"r":8},"17":{"c":"B","a":200,"r":8},"18":{"c":"B","a":190,"r":8},"19":{"c":"B","a":180,"r":8},"20":{"c":"B","a":150,"r":8},"21":{"c":"B","a":190,"r":8},"22":{"c":"B","a":180,"r":8},"23":{"c":"B","a":180,"r":8},"24":{"c":"B","a":180,"r":8},"25":{"c":"B","a":180,"r":9},"26":{"c":"B","a":180,"r":9},"27":{"c":"B","a":180,"r":9},"28":{"c":"B","a":180,"r":9},"29":{"c":"B","a":180,"r":9},"30":{"c":"B","a":180,"r":9},"31":{"c":"C","a":100,"r":12},"32":{"c":"C","a":140,"r":12},"33":{"c":"C","a":130,"r":12},"34":{"c":"C","a":100,"r":12},"35":{"c":"C","a":140,"r":12},"36":{"c":"C","a":130,"r":12},"37":{"c":"C","a":100,"r":12},"38":{"c":"C","a":140,"r":12},"39":{"c":"C","a":130,"r":12},"40":{"c":"C","a":100,"r":12},"41":{"c":"C","a":140,"r":12},"42":{"c":"C","a":130,"r":12},"43":{"c":"C","a":100,"r":12},"44":{"c":"C","a":140,"r":12},"45":{"c":"C","a":130,"r":12},"46":{"c":"C","a":100,"r":12},"47":{"c":"C","a":140,"r":12},"48":{"c":"C","a":130,"r":12},"49":{"c":"C","a":100,"r":12},"50":{"c":"C","a":140,"r":12},"51":{"c":"C","a":130,"r":12},"52":{"c":"C","a":100,"r":14},"53":{"c":"C","a":140,"r":14},"54":{"c":"C","a":130,"r":14},"55":{"c":"C","a":100,"r":14},"56":{"c":"C","a":140,"r":14},"57":{"c":"C","a":130,"r":14},"58":{"c":"C","a":100,"r":14},"59":{"c":"C","a":140,"r":14},"60":{"c":"C","a":130,"r":14}}};
+$('em').onclick=()=>{const m=new Map();EMB.l.forEach(([p,s,q])=>{if(!m.has(p))m.set(p,{id:'PED'+p,lines:[]});m.get(p).lines.push({sku:String(s),q,pu:0})});ORD=[...m.values()];CAT=EMB.c;info();reset()};
+$('fi').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=ev=>{const wb=XLSX.read(ev.target.result,{type:'array'}),rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]),m=new Map();
+rows.forEach(r=>{const k={};for(const c in r)k[c.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim()]=r[c];if(k.pedido==null||k.sku==null)return;const id=String(k.pedido);if(!m.has(id))m.set(id,{id,lines:[]});m.get(id).lines.push({sku:String(k.sku),q:+k.cantidad||1,pu:parseInt(String(k.puesto??'').replace(/\D/g,''))||0})});
+if(!m.size){$('inf').textContent='No se encontraron columnas pedido y sku.';return}CAT={};const s2=wb.Sheets[wb.SheetNames[1]];if(s2)XLSX.utils.sheet_to_json(s2).forEach(r=>{const k={};for(const c in r)k[c.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim()]=r[c];if(k.sku!=null&&k.categoria)CAT[String(k.sku)]={c:String(k.categoria),a:+k['stock almacen'],r:+k['tiempo de reposicion']}});ORD=[...m.values()];info();reset()};rd.readAsArrayBuffer(f)};
+$('ap').onclick=()=>{try{const L=JSON.parse($('js').value);if(!ok(L))throw 0;LY[cur]=L;reset();if(ED)eref()}catch{alert('JSON no válido: necesita nodos IN y OUT, al menos un pick y un pack, y la lista edges.')}};
+$('sl').onchange=e=>{cur=e.target.value;show();reset();if(!ok(LY[cur])&&!ED)setMode(true)};
+['np','nm','tp'].forEach(i=>$(i).onchange=regen);['nb','tpu','tpk','v','hw','tln','stk','mna','mnb','mnc','wm','tr','nr','rp','cap'].forEach(i=>$(i).onchange=reset);
+$('sp').onchange=()=>{};$('rs').onclick=reset;
+$('pl').onclick=()=>{run=!run;$('pl').textContent=run?'⏸':'▶'};
+
+/* EDITOR */
+let tool='sel',sel=null,selE=null,cs=null,hl=null,zA=0,extraZ=[],V={s:8,x:60,y:50},hist=[],vl=[],dg=null;
+const $c=$('ec'),cx=$c.getContext('2d'),TC={in:'#2f9e44',pick:'#1c7ed6',pack:'#e8590c',out:'#868e96',n:'#adb5bd',dock:'#12b886',rx:'#7950f2'},TN={in:'Entrada',pick:'Picking',pack:'Packing',out:'Expedición',n:'Cruce',dock:'Muelle de expedición',rx:'Recepción de vacías'},PRE={pick:'P',pack:'K',n:'N',dock:'D',rx:'X'},TL=[['sel','Seleccionar'],['in','Entrada'],['pick','Picking'],['pack','Packing'],['out','Expedición'],['n','Cruce'],['dock','Muelle'],['rx','Recepción vacías'],['con','Conectar']];
+const OX=.5,OY=.5,LL=()=>LY[cur],sp=n=>[(n.x+n.z*OX)*V.s+V.x,(n.y-n.z*OY)*V.s+V.y],wp=(sx,sy,z)=>[(sx-V.x)/V.s-z*OX,(sy-V.y)/V.s+z*OY],lvls=()=>[...new Set(LL().nodes.map(n=>n.z).concat(extraZ,[zA]))].sort((a,b)=>a-b),kv=(a,b)=>`<div class="k"><span>${a}</span><b>${b}</b></div>`;
+const hs=()=>{hist.push([cur,JSON.stringify(LL())]);if(hist.length>60)hist.shift()};
+function undo(){const h=hist.pop();if(!h)return;LY[h[0]]=JSON.parse(h[1]);sel=selE=null;show()}
+function vld(L){const o=[],id=new Set(),a={},r={};L.nodes.forEach(n=>{if(id.has(n.id))o.push({m:'Nombre repetido: '+n.id,id:n.id});id.add(n.id);a[n.id]=[];r[n.id]=0});
+L.edges.forEach(([x,y])=>{if(a[x]&&a[y]){a[x].push(y);r[y]++}});
+const has=t=>L.nodes.some(n=>n.t==t);if(!has('in'))o.push({m:'Falta la entrada de cubetas (IN)'});if(!has('out'))o.push({m:'Falta la expedición (OUT)'});if(!has('pick'))o.push({m:'No hay puestos de picking'});if(!has('pack'))o.push({m:'No hay puestos de packing'});
+const rc=s=>{const v=new Set([s]),q=[s];while(q.length)for(const w of a[q.shift()]||[])if(!v.has(w)){v.add(w);q.push(w)}return v},fi=a.IN?rc('IN'):new Set;
+L.nodes.forEach(n=>{if((n.t=='pick'||n.t=='pack')&&a.IN&&!fi.has(n.id))o.push({m:n.id+' no es alcanzable desde la entrada',id:n.id});
+if(n.t=='pack'){const f=rc(n.id);if(!f.has('OUT'))o.push({m:n.id+' no tiene camino a la expedición',id:n.id});if(!f.has('IN'))o.push({m:n.id+' no tiene camino de retorno a la entrada',id:n.id})}
+if(!a[n.id].length&&n.t!='out'&&n.t!='dock')o.push({m:n.id+' no tiene salida',id:n.id});
+if(!r[n.id]&&n.t!='in'&&n.t!='rx')o.push({m:n.id+' no tiene entrada',id:n.id})});return o}
+function eref(){vl=vld(LL());edraw();pe()}
+function tb(){$('et').innerHTML=TL.map(([k,n])=>`<button data-t="${k}" class="${tool==k?'p':''}">${n}</button>`).join('')+`<span>Nivel z</span><select id="zs">${lvls().map(z=>`<option${z==zA?' selected':''}>${z}</option>`).join('')}</select><input id="zn" type="number" placeholder="+ nivel" style="width:70px"><button data-a="undo">Deshacer</button><button data-a="del">Eliminar</button><button data-a="rev">Invertir tramo</button><button data-a="fit">Ajustar vista</button><button data-a="cp">Copiar a ${cur=='A'?'B':'A'}</button><button data-a="sim" class="p">Simular ▶</button>`}
+function fit(){const l=LL().nodes,W=$c.clientWidth,H=$c.clientHeight;if(!l.length)return;const xs=l.map(n=>n.x+n.z*OX),ys=l.map(n=>n.y-n.z*OY),a=Math.min(...xs),b=Math.max(...xs),c=Math.min(...ys),d=Math.max(...ys);V.s=Math.min(30,Math.max(2,Math.min((W-120)/((b-a)||1),(H-100)/((d-c)||1))));V.x=60-a*V.s;V.y=50-c*V.s}
+function edraw(){if(!ED)return;const W=$c.clientWidth,H=$c.clientHeight,d=devicePixelRatio||1;if($c.width!=Math.round(W*d)||$c.height!=Math.round(H*d)){$c.width=Math.round(W*d);$c.height=Math.round(H*d)}cx.setTransform(d,0,0,d,0,0);const q=getComputedStyle(document.documentElement),g=k=>q.getPropertyValue(k).trim();
+cx.fillStyle=g('--bg');cx.fillRect(0,0,W,H);cx.strokeStyle=g('--bd');cx.lineWidth=1;cx.beginPath();const st=V.s<5?10:V.s<12?5:2;
+for(let x=Math.ceil(wp(0,0,zA)[0]/st)*st;;x+=st){const u=sp({x,y:0,z:zA})[0];if(u>W)break;cx.moveTo(u,0);cx.lineTo(u,H)}
+for(let y=Math.ceil(wp(0,0,zA)[1]/st)*st;;y+=st){const u=sp({x:0,y,z:zA})[1];if(u>H)break;cx.moveTo(0,u);cx.lineTo(W,u)}cx.stroke();
+const N={};LL().nodes.forEach(n=>N[n.id]=n);
+LL().edges.forEach(e=>{const A=N[e[0]],B=N[e[1]];if(!A||!B)return;const a=sp(A),b=sp(B),sl=selE&&selE[0]==e[0]&&selE[1]==e[1];cx.globalAlpha=A.z==zA||B.z==zA?1:.3;cx.strokeStyle=sl?g('--ac'):g('--mu');cx.lineWidth=sl?3:1.5;cx.setLineDash(A.z!=B.z?[5,4]:[]);cx.beginPath();cx.moveTo(a[0],a[1]);cx.lineTo(b[0],b[1]);cx.stroke();cx.setLineDash([]);
+const mx=a[0]+(b[0]-a[0])*.6,my=a[1]+(b[1]-a[1])*.6,an=Math.atan2(b[1]-a[1],b[0]-a[0]);cx.fillStyle=cx.strokeStyle;cx.beginPath();cx.moveTo(mx+7*Math.cos(an),my+7*Math.sin(an));cx.lineTo(mx+6*Math.cos(an+2.5),my+6*Math.sin(an+2.5));cx.lineTo(mx+6*Math.cos(an-2.5),my+6*Math.sin(an-2.5));cx.fill()});
+LL().nodes.forEach(n=>{const[x,y]=sp(n),r=n.t=='n'?5:9;cx.globalAlpha=n.z==zA?1:.35;cx.fillStyle=TC[n.t]||'#adb5bd';cx.fillRect(x-r,y-r,2*r,2*r);if(n.id==sel||n.id==cs||n.id==hl){cx.strokeStyle=n.id==hl?'#e03131':g('--ac');cx.lineWidth=3;cx.strokeRect(x-r-3,y-r-3,2*r+6,2*r+6)}cx.fillStyle=g('--tx');cx.font='10px system-ui';cx.fillText(n.id+(n.z!=zA?' z'+n.z:''),x+r+3,y+3)});
+cx.globalAlpha=1;cx.fillStyle=g('--mu');cx.font='11px system-ui';cx.fillText('Nivel activo z='+zA+' m · '+V.s.toFixed(1)+' px/m · niveles en perspectiva oblicua, tramos entre niveles punteados',8,H-8)}
+function hit(sx,sy){let b=null,bd=12;LL().nodes.forEach(n=>{const[x,y]=sp(n),d=Math.hypot(x-sx,y-sy)-(n.z==zA?3:0);if(d<bd){bd=d;b=n}});return b}
+function hitE(sx,sy){const N={};LL().nodes.forEach(n=>N[n.id]=n);for(const e of LL().edges){const A=N[e[0]],B=N[e[1]];if(!A||!B)continue;const a=sp(A),b=sp(B),dx=b[0]-a[0],dy=b[1]-a[1],t=Math.max(0,Math.min(1,((sx-a[0])*dx+(sy-a[1])*dy)/(dx*dx+dy*dy||1)));if(Math.hypot(a[0]+t*dx-sx,a[1]+t*dy-sy)<6)return[e[0],e[1]]}return null}
+function nid(pre){let i=1;while(LL().nodes.some(n=>n.id==pre+i))i++;return pre+i}
+function add(t,sx,sy){const l=LL();if((t=='in'||t=='out')&&l.nodes.some(n=>n.t==t)){alert('Solo puede haber una '+(t=='in'?'entrada':'expedición')+'.');return}hs();const w=wp(sx,sy,zA),id=t=='in'?'IN':t=='out'?'OUT':nid(PRE[t]);l.nodes.push({id,t,x:Math.round(w[0]),y:Math.round(w[1]),z:zA});sel=id;selE=null;show()}
+$c.oncontextmenu=e=>e.preventDefault();
+$c.onpointerdown=e=>{const r=$c.getBoundingClientRect(),sx=e.clientX-r.left,sy=e.clientY-r.top,h=hit(sx,sy);$c.setPointerCapture(e.pointerId);hl=null;
+if(e.button||e.shiftKey){dg={p:1,sx,sy,vx:V.x,vy:V.y};return}
+if(tool=='sel'){if(h){sel=h.id;selE=null;hs();dg={n:h,moved:0}}else{sel=null;selE=hitE(sx,sy);dg={p:1,sx,sy,vx:V.x,vy:V.y}}}
+else if(tool=='con'){if(h){if(!cs)cs=h.id;else{if(cs!=h.id){hs();const l=LL(),i=l.edges.findIndex(x=>x[0]==cs&&x[1]==h.id);if(i<0)l.edges.push([cs,h.id]);else l.edges.splice(i,1)}cs=null;show();return}}else cs=null}
+else if(h){sel=h.id;selE=null}else add(tool,sx,sy);eref()};
+$c.onpointermove=e=>{if(!dg)return;const r=$c.getBoundingClientRect(),sx=e.clientX-r.left,sy=e.clientY-r.top;if(dg.p){V.x=dg.vx+sx-dg.sx;V.y=dg.vy+sy-dg.sy;edraw()}else if(dg.n){const w=wp(sx,sy,dg.n.z);dg.n.x=Math.round(w[0]);dg.n.y=Math.round(w[1]);dg.moved=1;edraw()}};
+$c.onpointerup=()=>{if(dg&&dg.n){if(dg.moved)show();else hist.pop()}dg=null};
+$c.onwheel=e=>{e.preventDefault();const r=$c.getBoundingClientRect(),sx=e.clientX-r.left,sy=e.clientY-r.top,ns=Math.min(40,Math.max(2,V.s*(e.deltaY<0?1.15:1/1.15)));V.x=sx-(sx-V.x)*ns/V.s;V.y=sy-(sy-V.y)*ns/V.s;V.s=ns;edraw()};
+function act(a){const l=LL();if(a=='undo')undo();else if(a=='fit'){fit();edraw()}else if(a=='sim')setMode(false);
+else if(a=='cp'){const o=cur=='A'?'B':'A';LY[o]=JSON.parse(JSON.stringify(l));alert('Layout copiado a '+o+'. Cámbialo con "Layout activo".')}
+else if(a=='del'){if(sel){hs();l.nodes=l.nodes.filter(n=>n.id!=sel);l.edges=l.edges.filter(g=>g[0]!=sel&&g[1]!=sel);sel=null;show()}else if(selE){hs();l.edges=l.edges.filter(g=>!(g[0]==selE[0]&&g[1]==selE[1]));selE=null;show()}}
+else if(a=='rev'&&selE){hs();const g=l.edges.find(g=>g[0]==selE[0]&&g[1]==selE[1]);if(g){g.reverse();selE=[g[0],g[1]]}show()}}
+$('et').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.t){tool=b.dataset.t;cs=null;tb();edraw()}else if(b.dataset.a)act(b.dataset.a)};
+$('et').onchange=e=>{if(e.target.id=='zs')zA=+e.target.value;else if(e.target.id=='zn'&&e.target.value!==''){zA=+e.target.value;extraZ.push(zA)}tb();edraw()};
+addEventListener('keydown',e=>{if(!ED||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;if(e.key=='Delete'||e.key=='Backspace')act('del');else if(e.key=='Escape'){tool='sel';cs=null;tb();edraw()}else if((e.ctrlKey||e.metaKey)&&e.key=='z'){e.preventDefault();undo()}});
+addEventListener('resize',()=>ED&&edraw());
+function pe(){if(!ED)return;const l=LL(),n=l.nodes.find(x=>x.id==sel);let h='<h2 style="border:0;margin-top:0">Propiedades</h2>';
+if(n){const f=(k,lb,v,ty,ro)=>{ty=ty||'number';return`<label>${lb}<input data-f="${k}" type="${ty}" value="${v??''}"${ro?' readonly':''} style="width:${ty=='text'?110:80}px"></label>`};
+h+=f('id','Nombre',n.id,'text',n.t=='in'||n.t=='out')+`<label>Tipo<select data-f="t">${Object.keys(TN).map(k=>`<option value="${k}"${k==n.t?' selected':''}>${TN[k]}</option>`).join('')}</select></label>`+f('x','x (m)',n.x)+f('y','y (m)',n.y)+f('z','z (m)',n.z);
+if(n.t=='pick')h+=f('tpu','s/unidad (vacío = global)',n.tpu)+f('tln','s/línea (vacío = global)',n.tln)+f('cap','Cubetas máx. (vacío = global)',n.cap);
+if(n.t=='pack')h+=f('tpk','s/pedido (vacío = global)',n.tpk);
+if(n.t=='dock')h+=f('tc','Ciclo exterior (h)',n.tc??48);
+if(n.t=='dock'||n.t=='rx')h+='<p>Muelle y recepción de vacías se editan y cuentan en el indicador, pero la simulación aún no los usa.</p>'}
+else if(selE){const A=l.nodes.find(x=>x.id==selE[0]),B=l.nodes.find(x=>x.id==selE[1]);h+=`<p>Tramo ${selE[0]} → ${selE[1]}: ${A&&B?Math.hypot(A.x-B.x,A.y-B.y,A.z-B.z).toFixed(1):'?'} m. Usa Invertir o Eliminar en la barra.</p>`}
+else h+='<p>Elige una herramienta para colocar elementos o selecciona uno. Conectar: clic en origen y luego en destino (otro clic sobre un tramo existente lo quita). Mayús + arrastrar o clic derecho desplaza la vista; la rueda hace zoom.</p>';
+h+='<h2>Avisos</h2>'+(vl.length?vl.map(v=>`<div class="k" data-id="${v.id||''}" style="cursor:pointer"><span class="w">${v.m}</span></div>`).join(''):'<p class="g">Sin avisos: el layout es válido.</p>');
+h+=`<h2>Resumen</h2>${kv('Picking',l.nodes.filter(n=>n.t=='pick').length)}${kv('Packing',l.nodes.filter(n=>n.t=='pack').length)}${kv('Nodos / tramos',l.nodes.length+' / '+l.edges.length)}`;
+h+='<h2>Cubetas de expedición (orientativo)</h2><p>Cubetas que salen cargadas y vuelven vacías tras el ciclo exterior de los muelles. Una cubeta = un pedido, sin volumetría.</p><button id="xc" class="p">Calcular</button><div id="xr"></div>';
+$('mt').innerHTML=h}
+$('mt').onchange=e=>{const f=e.target.dataset.f,n=LL().nodes.find(x=>x.id==sel);if(!ED||!f||!n)return;hs();let v=e.target.value;
+if(f=='id'){v=v.trim().replace(/\s+/g,'');if(!v||LL().nodes.some(x=>x.id==v)){hist.pop();pe();return}LL().edges.forEach(g=>{if(g[0]==n.id)g[0]=v;if(g[1]==n.id)g[1]=v});sel=n.id=v}
+else if(f=='t'){if((v=='in'||v=='out')&&LL().nodes.some(x=>x.t==v&&x!=n)){alert('Solo puede haber una entrada y una expedición.');hist.pop();pe();return}n.t=v;if(v=='in'||v=='out'){const k=v=='in'?'IN':'OUT';LL().edges.forEach(g=>{if(g[0]==n.id)g[0]=k;if(g[1]==n.id)g[1]=k});n.id=sel=k}}
+else n[f]=v===''?undefined:+v;show()};
+$('mt').onclick=e=>{if(!ED)return;const w=e.target.closest('[data-id]');if(w&&w.dataset.id){hl=sel=w.dataset.id;selE=null;const n=LL().nodes.find(x=>x.id==hl);if(n)zA=n.z;tb();eref()}if(e.target.id=='xc')xcalc()};
+function xcalc(){const o=$('xr');if(!ORD.length){o.innerHTML='<p class="w">Carga primero los pedidos.</p>';return}if(!ok(LL())){o.innerHTML='<p class="w">El layout no es simulable todavía.</p>';return}
+o.innerHTML='<p>Calculando…</p>';setTimeout(()=>{const m=fast(LL()),dk=LL().nodes.filter(n=>n.t=='dock'),h=dk.length?dk.reduce((a,n)=>a+(n.tc??48),0)/dk.length:48;
+o.innerHTML=kv('Pedidos por hora (simulación)',m.thr.toFixed(0))+kv('Ciclo exterior medio',h+' h'+(dk.length?'':' (por defecto)'))+kv('Cubetas de expedición ≈',Math.ceil(m.thr*h*1.1).toLocaleString('es'))+kv('Cubetas internas en circulación',P().nb)+'<p>Orientativo: pedidos/h × ciclo × 1,10 de margen.</p>'},30)}
+function setMode(on){if(!on&&!ok(LL())){alert('Para simular hace falta: entrada IN, expedición OUT, al menos un picking y un packing.');return}ED=on;document.body.classList.toggle('ed',on);$('md').textContent=on?'Volver a la simulación':'Abrir editor de instalación';
+if(on){run=false;$('pl').textContent='▶';tb();fit();eref()}else{hl=null;reset();rz()}}
+$('md').onclick=()=>setMode(!ED);
+
+async function sv(){const j=JSON.stringify(LY[cur],null,1);try{const d=await claude.use('downloads');if(!d)throw 0;await d.save({filename:'instalacion-'+cur+'.json',data:j})}catch(e){if(e&&e.code=='declined')return;$('js').select();try{navigator.clipboard.writeText(j)}catch{}alert('Aquí no se puede descargar el archivo. El JSON queda seleccionado en el cuadro de la izquierda (y copiado si el navegador lo permite): pégalo en un archivo .json.')}}
+$('sv').onclick=sv;
+$('nw').onclick=()=>{hs();LY[cur]={nodes:[],edges:[]};sel=selE=null;show();if(!ED)setMode(true);else{tb();eref()}};
+$('lf').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=ev=>{try{const o=JSON.parse(ev.target.result);if(!Array.isArray(o.nodes)||!Array.isArray(o.edges))throw 0;hs();LY[cur]=o;sel=selE=null;show();if(ED){fit();tb();eref()}else if(ok(o))reset();else setMode(true)}catch{alert('El archivo no es un layout válido (necesita nodes y edges).')}e.target.value=''};rd.readAsText(f)};
+let sv0=null;try{sv0=JSON.parse(localStorage.getItem('vi-layouts'))}catch{}
+const okL=l=>l&&Array.isArray(l.nodes)&&Array.isArray(l.edges);
+LY.A=okL(sv0&&sv0.A)?sv0.A:gen(6,3,0);LY.B=okL(sv0&&sv0.B)?sv0.B:gen(6,3,1);ORD=sample();info();show();rz();reset();if(!ok(LY[cur]))setMode(true);
+let lt=0,fr=0;(function loop(ts){const dt=Math.min(.1,(ts-lt)/1e3||0);lt=ts;
+if(run&&S){acc+=Math.min(500,+$('sp').value*dt/.5);while(acc>=1){S.step(.5);acc--}if(S.fin()||S.err||S.halt){run=false;$('pl').textContent='▶'}}
+if(!ED&&S){draw();R.render(sc,cam)}if(++fr%10==0)panel();requestAnimationFrame(loop)})(0);
+</script></body></html>
